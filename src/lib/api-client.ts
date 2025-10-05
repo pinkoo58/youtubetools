@@ -87,7 +87,7 @@ export class ApiClient {
     } = { ...this.defaultOptions, ...options };
 
     const url = `${this.baseUrl}${endpoint}`;
-    let lastError: Error;
+    let lastError: Error | null = null;
 
     // Set loading state
     onLoadingChange?.(true);
@@ -153,7 +153,7 @@ export class ApiClient {
         : 'Something went wrong. Please try again.';
       
       onError?.(errorMessage);
-      throw lastError;
+      throw lastError || new ApiError('Unknown error occurred', 500);
     } finally {
       onLoadingChange?.(false);
     }

@@ -3,7 +3,7 @@ import { asyncHandler } from '@/lib/error-handler';
 import { VideoIdSchema } from '@/lib/validation';
 import { fetchVideoInfo, fetchVideoDescription } from '@/lib/youtube-api';
 
-export const POST = asyncHandler(async (request: NextRequest) => {
+export const POST = asyncHandler(async (request: Request) => {
   const body = await request.json();
   const videoId = VideoIdSchema.parse(body.videoId);
 

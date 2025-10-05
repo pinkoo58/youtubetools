@@ -1,47 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { rateLimiter, getClientIP } from '@/lib/rate-limiter';
+import { asyncHandler } from '@/lib/error-handler';
 
-export async function POST(request: NextRequest) {
-  try {
-    // Rate limiting
-    const clientIp = getClientIP(request);
-    const isAllowed = rateLimiter.isAllowed(clientIp);
-    
-    if (!isAllowed) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
-      );
-    }
-
-    const body = await request.json();
-    const { query } = body;
-
-    if (!query || typeof query !== 'string' || query.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Query parameter is required' },
-        { status: 400 }
-      );
-    }
-
-    // Generate keyword suggestions
-    const suggestions = generateKeywordSuggestions(query.trim());
-
-    return NextResponse.json({
-      suggestions,
-      count: suggestions.length,
-      query: query.trim(),
-      timestamp: new Date().toISOString(),
-    });
-
-  } catch (error) {
-    console.error('YouTube keywords API error:', error);
+export const POST = asyncHandler(async (request: Request) => {
+  // Rate limiting
+  const clientIp = getClientIP(request);
+  const isAllowed = rateLimiter.isAllowed(clientIp);
+  
+  if (!isAllowed) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
     );
   }
-}
+
+  const body = await request.json();
+  const { query } = body;
+
+  if (!query || typeof query !== 'string' || query.trim().length === 0) {
+    return NextResponse.json(
+      { error: 'Query parameter is required' },
+      { status: 400 }
+    );
+  }
+
+  // Generate keyword suggestions
+  const suggestions = generateKeywordSuggestions(query.trim());
+
+  return NextResponse.json({
+    suggestions,
+    count: suggestions.length,
+    query: query.trim(),
+    timestamp: new Date().toISOString(),
+  });
+});
 
 function generateKeywordSuggestions(query: string): string[] {
   const baseQuery = query.toLowerCase();

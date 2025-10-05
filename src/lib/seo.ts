@@ -19,7 +19,6 @@ export const generateMetadata = (config: SEOConfig): Metadata => {
     description: config.description,
     keywords: config.keywords,
     robots: config.noindex ? 'noindex, nofollow' : 'index, follow',
-    canonical: config.canonical || baseUrl,
     
     openGraph: {
       title: config.title,

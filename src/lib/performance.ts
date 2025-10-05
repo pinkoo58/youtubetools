@@ -1,15 +1,19 @@
 // Performance monitoring and optimization utilities
 
-export const measureWebVitals = () => {
+export const measureWebVitals = async () => {
   if (typeof window !== 'undefined') {
-    // Measure Core Web Vitals
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+    try {
+      // Measure Core Web Vitals
+      const webVitals = await import('web-vitals' as any)
+      const { getCLS, getFID, getFCP, getLCP, getTTFB } = webVitals
       getCLS(console.log)
       getFID(console.log)
       getFCP(console.log)
       getLCP(console.log)
       getTTFB(console.log)
-    })
+    } catch {
+      // Silently fail if web-vitals is not available
+    }
   }
 }
 

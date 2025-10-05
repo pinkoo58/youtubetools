@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ClientOnly } from '@/components/ClientOnly';
@@ -73,7 +73,7 @@ export default function RegionRestrictionClient() {
     }
   };
 
-  const getRestrictionStatus = () => {
+  const restrictionStatus = useMemo(() => {
     if (!videoData?.regionRestriction) {
       return { status: 'available', message: 'Available worldwide', color: 'text-green-600 bg-green-50 border-green-200' };
     }
@@ -99,7 +99,7 @@ export default function RegionRestrictionClient() {
     }
 
     return { status: 'available', message: 'Available worldwide', color: 'text-green-600 bg-green-50 border-green-200' };
-  };
+  }, [videoData]);
 
   return (
     <>
@@ -195,27 +195,27 @@ export default function RegionRestrictionClient() {
                           <p className="text-gray-600 mb-2">Channel: {videoData.channelTitle}</p>
                           <p className="text-gray-500 mb-6">Published: {new Date(videoData.publishedAt).toLocaleDateString()}</p>
                           
-                          <div className={`inline-flex items-center px-4 py-2 rounded-xl border font-semibold ${getRestrictionStatus().color}`}>
+                          <div className={`inline-flex items-center px-4 py-2 rounded-xl border font-semibold ${restrictionStatus.color}`}>
                             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            {getRestrictionStatus().message}
+                            {restrictionStatus.message}
                           </div>
 
-                          {getRestrictionStatus().countries && (
+                          {restrictionStatus.countries && (
                             <div className="mt-4">
                               <h4 className="font-semibold text-gray-900 mb-2">
-                                {getRestrictionStatus().status === 'blocked' ? 'Blocked Countries:' : 'Available Countries:'}
+                                {restrictionStatus.status === 'blocked' ? 'Blocked Countries:' : 'Available Countries:'}
                               </h4>
                               <div className="flex flex-wrap gap-2">
-                                {getRestrictionStatus().countries?.slice(0, 10).map((country, index) => (
+                                {restrictionStatus.countries.slice(0, 10).map((country, index) => (
                                   <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm">
                                     {country}
                                   </span>
                                 ))}
-                                {getRestrictionStatus().countries && getRestrictionStatus().countries.length > 10 && (
+                                {restrictionStatus.countries.length > 10 && (
                                   <span className="px-3 py-1 bg-gray-200 text-gray-600 rounded-lg text-sm">
-                                    +{getRestrictionStatus().countries.length - 10} more
+                                    +{restrictionStatus.countries.length - 10} more
                                   </span>
                                 )}
                               </div>

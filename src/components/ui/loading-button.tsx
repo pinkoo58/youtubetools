@@ -1,8 +1,9 @@
 import React from 'react';
-import { Button, ButtonProps } from './button';
+import { Button, buttonVariants } from './button';
 import { cn } from '@/lib/utils';
+import { VariantProps } from 'class-variance-authority';
 
-interface LoadingButtonProps extends ButtonProps {
+interface LoadingButtonProps extends React.ComponentProps<"button">, VariantProps<typeof buttonVariants> {
   loading?: boolean;
   loadingText?: string;
   icon?: React.ReactNode;
@@ -17,7 +18,9 @@ const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
     icon, 
     loadingIcon, 
     disabled, 
-    className, 
+    className,
+    variant,
+    size,
     ...props 
   }, ref) => {
     const defaultLoadingIcon = (
@@ -46,6 +49,8 @@ const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
       <Button
         ref={ref}
         disabled={isDisabled}
+        variant={variant}
+        size={size}
         className={cn(
           'relative transition-all duration-200',
           loading && 'cursor-not-allowed',

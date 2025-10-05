@@ -5,8 +5,9 @@
 import { NextResponse } from 'next/server';
 import { logger } from './logger';
 import { ZodError } from 'zod';
+import { ApiError } from './api-client';
 
-export interface ApiError extends Error {
+export interface ApiErrorInterface extends Error {
   statusCode?: number;
   code?: string;
   isOperational?: boolean;
@@ -65,10 +66,9 @@ export function handleApiError(error: unknown, context?: string): NextResponse {
 
   if (error instanceof ApiError) {
     const statusCode = error.statusCode || 500;
-    const message = error.isOperational ? error.message : 'Something went wrong. Please try again.';
     
     return NextResponse.json(
-      createApiResponse(false, null, message, error.code),
+      createApiResponse(false, null, error.message, error.code),
       { status: statusCode }
     );
   }
@@ -101,11 +101,7 @@ export function createApiError(
   code?: string,
   isOperational: boolean = true
 ): ApiError {
-  const error = new Error(message) as ApiError;
-  error.statusCode = statusCode;
-  error.code = code;
-  error.isOperational = isOperational;
-  return error;
+  return new ApiError(message, statusCode, code);
 }
 
 /**
