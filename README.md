@@ -1,36 +1,263 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YouTube Transcript Downloader
 
-## Getting Started
+A production-ready Next.js application for extracting and downloading YouTube video transcripts with comprehensive error handling, security features, and performance optimizations.
 
-First, run the development server:
+## 🚀 Features
+
+- **Universal Video Support**: Extract transcripts from any YouTube video with available captions
+- **Multiple Formats**: Download transcripts as TXT or SRT files
+- **Real-time Processing**: Fast transcript extraction using YouTube's internal APIs
+- **Security First**: Rate limiting, input validation, and security headers
+- **Production Ready**: Comprehensive error handling, logging, and monitoring
+- **Responsive Design**: Modern UI with Tailwind CSS
+- **Type Safety**: Full TypeScript implementation with Zod validation
+- **Testing**: Comprehensive unit test coverage
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15.5.4 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Validation**: Zod
+- **Testing**: Jest + React Testing Library
+- **UI Components**: Radix UI + shadcn/ui
+
+## 📦 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd youtube-transcript-downloader
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Configure the following variables in `.env.local`:
+   ```env
+   # Optional: YouTube Data API key for enhanced features
+   YOUTUBE_API_KEY=your_api_key_here
+   
+   # Rate limiting configuration
+   RATE_LIMIT_MAX_REQUESTS=100
+   RATE_LIMIT_WINDOW_MS=900000
+   
+   # Logging level
+   LOG_LEVEL=INFO
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🧪 Testing
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/                          # Next.js App Router
+│   ├── api/                      # API routes
+│   │   ├── transcript/           # Transcript extraction API
+│   │   └── video-info/           # Video information API
+│   ├── transcript/[videoId]/     # Dynamic transcript pages
+│   └── youtube-tools/            # Tool pages
+├── components/                   # Reusable UI components
+├── hooks/                        # Custom React hooks
+├── lib/                          # Core utilities and configurations
+│   ├── youtube-api.ts           # YouTube API utilities
+│   ├── rate-limiter.ts          # Rate limiting implementation
+│   ├── logger.ts                # Structured logging
+│   └── config.ts                # Environment configuration
+├── utils/                        # Client-side utilities
+└── middleware.ts                 # Next.js middleware for security
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+__tests__/                        # Unit tests
+├── lib/                          # Library tests
+├── utils/                        # Utility tests
+└── hooks/                        # Hook tests
+```
 
-## Learn More
+## 🔧 API Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+### GET `/api/transcript`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Extracts transcript from a YouTube video.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Parameters:**
+- `videoId` (string, required): YouTube video ID
 
-## Deploy on Vercel
+**Response:**
+```json
+{
+  "transcript": "Formatted transcript text...",
+  "language": "auto-detected",
+  "trackName": "YouTube Auto-generated",
+  "wordCount": 1234
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Error Codes:**
+- `INVALID_VIDEO_ID`: Invalid video ID format
+- `VIDEO_NOT_FOUND`: Video not found or private
+- `NO_TRANSCRIPT`: No transcript available
+- `RATE_LIMITED`: Too many requests
+- `FETCH_ERROR`: Network or API error
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### GET `/api/video-info`
+
+Fetches video metadata.
+
+**Parameters:**
+- `videoId` (string, required): YouTube video ID
+
+**Response:**
+```json
+{
+  "title": "Video Title",
+  "author": "Channel Name",
+  "thumbnail": "https://img.youtube.com/vi/..."
+}
+```
+
+## 🔒 Security Features
+
+- **Rate Limiting**: 100 requests per 15 minutes per IP
+- **Input Validation**: Zod schema validation for all inputs
+- **Security Headers**: CSP, XSS protection, frame options
+- **CORS Configuration**: Controlled cross-origin access
+- **Error Sanitization**: No sensitive data in error responses
+- **Request Timeouts**: Prevent hanging requests
+
+## 📊 Performance Optimizations
+
+- **Caching**: HTTP caching headers for API responses
+- **Code Splitting**: Automatic code splitting with Next.js
+- **Image Optimization**: Next.js image optimization
+- **Bundle Analysis**: Optimized bundle size
+- **Memory Management**: Efficient data structures and cleanup
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. **Connect your repository to Vercel**
+2. **Set environment variables in Vercel dashboard**
+3. **Deploy automatically on push to main branch**
+
+### Docker
+
+```bash
+# Build the Docker image
+docker build -t youtube-transcript-downloader .
+
+# Run the container
+docker run -p 3000:3000 youtube-transcript-downloader
+```
+
+### Manual Deployment
+
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
+## 🔍 Monitoring and Logging
+
+- **Structured Logging**: JSON logs in production
+- **Error Tracking**: Comprehensive error logging with context
+- **Performance Metrics**: Request duration and success rates
+- **Rate Limit Monitoring**: Track API usage patterns
+
+## 🤝 Contributing
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes and add tests**
+4. **Ensure all tests pass**: `npm test`
+5. **Commit your changes**: `git commit -m 'Add amazing feature'`
+6. **Push to the branch**: `git push origin feature/amazing-feature`
+7. **Open a Pull Request**
+
+## 📝 Code Quality
+
+- **TypeScript**: Full type safety
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting
+- **Husky**: Pre-commit hooks
+- **Jest**: Unit testing with 80%+ coverage
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **"No transcript available"**
+   - Video may not have captions enabled
+   - Video may be private or restricted
+   - Try a different video with known captions
+
+2. **Rate limit exceeded**
+   - Wait 15 minutes before making more requests
+   - Consider implementing user authentication for higher limits
+
+3. **Network timeouts**
+   - Check internet connection
+   - YouTube services may be temporarily unavailable
+
+### Debug Mode
+
+Set `LOG_LEVEL=DEBUG` in your environment to enable detailed logging.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- YouTube for providing the transcript APIs
+- Next.js team for the excellent framework
+- Vercel for hosting and deployment platform
+- Open source community for the amazing tools and libraries
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [troubleshooting section](#-troubleshooting)
+2. Search existing [GitHub issues](https://github.com/your-repo/issues)
+3. Create a new issue with detailed information
+
+---
+
+**Built with ❤️ using Next.js and TypeScript**
