@@ -14,9 +14,13 @@ export const POST = asyncHandler(async (request: Request) => {
   ]);
   
   return NextResponse.json({
-    title: videoInfo.title,
-    description: description,
+    title: sanitizeOutput(videoInfo.title),
+    description: sanitizeOutput(description),
     thumbnail: videoInfo.thumbnail,
-    author: videoInfo.author,
+    author: sanitizeOutput(videoInfo.author),
   });
 });
+
+function sanitizeOutput(text: string): string {
+  return text.replace(/[<>"'&]/g, '').substring(0, 1000);
+}

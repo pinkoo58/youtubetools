@@ -27,12 +27,26 @@ export const POST = asyncHandler(async (request: Request) => {
     );
   }
 
-  // Fetch tags
-  const tags = await fetchVideoTags(validationResult.data);
+  // Fetch tags with error handling
+  let tags: string[];
+  try {
+    tags = await fetchVideoTags(validationResult.data);
+  } catch (error) {
+    console.error('Failed to fetch video tags:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json(
+      createErrorResponse('Failed to fetch video tags', ERROR_CODES.FETCH_ERROR),
+      { status: 500 }
+    );
+  }
+
+  // Sanitize tags to prevent XSS
+  const sanitizedTags = tags.map(tag => 
+    typeof tag === 'string' ? tag.replace(/[<>"'&]/g, '').substring(0, 100) : ''
+  ).filter(tag => tag.length > 0);
 
   return NextResponse.json({
-    tags,
-    count: tags.length,
+    tags: sanitizedTags,
+    count: sanitizedTags.length,
     timestamp: new Date().toISOString(),
   });
 });

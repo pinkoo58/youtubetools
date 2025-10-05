@@ -12,9 +12,15 @@ export function middleware(request: NextRequest) {
   // CORS for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin');
-    const allowedOrigins = ['http://localhost:3000', 'https://localhost:3000'];
+    const allowedOrigins = [
+      'http://localhost:3000', 
+      'https://localhost:3000',
+      'https://tools.aipepal.com'
+    ];
     
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isAllowedOrigin = !origin || allowedOrigins.includes(origin);
+    
+    if (isAllowedOrigin) {
       response.headers.set('Access-Control-Allow-Origin', origin || '*');
     }
     

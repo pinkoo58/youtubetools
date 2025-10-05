@@ -67,24 +67,54 @@ export default function KeywordGeneratorClient() {
     setSelectedKeywords(new Set());
   };
 
-  const copyToClipboard = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      const text = Array.from(selectedKeywords).join(', ');
-      navigator.clipboard.writeText(text);
+  const copyToClipboard = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        const text = Array.from(selectedKeywords).join(', ');
+        await navigator.clipboard.writeText(text);
+        // Could add success feedback here
+      } else {
+        throw new Error('Clipboard not available');
+      }
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      // Could add error feedback here
     }
   };
 
   const exportCSV = () => {
-    if (typeof document !== 'undefined') {
-      const csv = Array.from(selectedKeywords).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `youtube-keywords-${query.replace(/\s+/g, '-')}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+    if (typeof document === 'undefined' || selectedKeywords.size === 0) {
+      return;
     }
+    
+    try {
+      const csvContent = Array.from(selectedKeywords).join('\n');
+      const filename = generateCSVFilename(query);
+      downloadCSVFile(csvContent, filename);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+    }
+  };
+  
+  const generateCSVFilename = (query: string): string => {
+    const sanitizedQuery = query.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    return `youtube-keywords-${sanitizedQuery}.csv`;
+  };
+  
+  const downloadCSVFile = (content: string, filename: string): void => {
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -202,24 +232,27 @@ export default function KeywordGeneratorClient() {
                     
                     <div className="p-6">
                       <div className="flex flex-wrap gap-2">
-                        {suggestions.map((keyword, index) => (
-                          <button
-                            key={index}
-                            onClick={() => toggleKeyword(keyword)}
-                            className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                              selectedKeywords.has(keyword)
-                                ? 'bg-red-100 text-red-800 border-2 border-red-300'
-                                : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200'
-                            }`}
-                          >
-                            {selectedKeywords.has(keyword) && (
-                              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                            {keyword}
-                          </button>
-                        ))}
+                        {suggestions.map((keyword, index) => {
+                          const isSelected = selectedKeywords.has(keyword);
+                          const buttonClass = isSelected
+                            ? 'bg-red-100 text-red-800 border-2 border-red-300'
+                            : 'bg-gray-100 text-gray-700 border-2 border-transparent hover:bg-gray-200';
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => toggleKeyword(keyword)}
+                              className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${buttonClass}`}
+                            >
+                              {isSelected && (
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                              {keyword}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

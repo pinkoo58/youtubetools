@@ -10,28 +10,49 @@ export function downloadTranscript(
   title: string,
   format: 'txt' | 'srt'
 ): void {
-  const sanitizedTitle = title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
-  const filename = `${sanitizedTitle}_transcript.${format}`;
-  
-  let content: string;
-  
-  if (format === 'srt') {
-    content = convertToSRT(transcript);
-  } else {
-    content = transcript;
+  try {
+    if (!transcript || typeof transcript !== 'string') {
+      throw new Error('Invalid transcript content');
+    }
+    
+    if (!title || typeof title !== 'string') {
+      throw new Error('Invalid title');
+    }
+    
+    if (!['txt', 'srt'].includes(format)) {
+      throw new Error('Invalid format');
+    }
+    
+    const sanitizedTitle = title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').substring(0, 50) || 'transcript';
+    const filename = `${sanitizedTitle}_transcript.${format}`;
+    
+    let content: string;
+    
+    if (format === 'srt') {
+      content = convertToSRT(transcript);
+    } else {
+      content = transcript;
+    }
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    if (document.body) {
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Download failed:', error);
+    throw new Error('Failed to download transcript');
   }
-  
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -39,18 +60,21 @@ export function downloadTranscript(
  */
 function convertToSRT(transcript: string): string {
   const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  let srtContent = '';
+  const srtParts: string[] = [];
   
-  sentences.forEach((sentence, index) => {
-    const startTime = formatSRTTime(index * 3); // 3 seconds per sentence
-    const endTime = formatSRTTime((index + 1) * 3);
+  for (let i = 0; i < sentences.length; i++) {
+    const startTime = formatSRTTime(i * 3); // 3 seconds per sentence
+    const endTime = formatSRTTime((i + 1) * 3);
     
-    srtContent += `${index + 1}\n`;
-    srtContent += `${startTime} --> ${endTime}\n`;
-    srtContent += `${sentence.trim()}\n\n`;
-  });
+    srtParts.push(
+      `${i + 1}`,
+      `${startTime} --> ${endTime}`,
+      `${sentences[i].trim()}`,
+      ''
+    );
+  }
   
-  return srtContent;
+  return srtParts.join('\n');
 }
 
 /**
@@ -62,5 +86,11 @@ function formatSRTTime(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   const milliseconds = Math.floor((seconds % 1) * 1000);
   
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${milliseconds.toString().padStart(3, '0')}`;
+  // Use template literals for better performance
+  const h = hours.toString().padStart(2, '0');
+  const m = minutes.toString().padStart(2, '0');
+  const s = secs.toString().padStart(2, '0');
+  const ms = milliseconds.toString().padStart(3, '0');
+  
+  return `${h}:${m}:${s},${ms}`;
 }

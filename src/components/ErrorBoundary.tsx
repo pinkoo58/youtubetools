@@ -3,32 +3,48 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
-interface Props {
+interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Sanitize error data before logging
+    const sanitizedError = {
+      name: error.name,
+      message: error.message.substring(0, 500),
+      stack: error.stack?.substring(0, 1000)
+    };
     
-    // In production, you might want to log this to an error reporting service
+    const sanitizedErrorInfo = {
+      componentStack: errorInfo.componentStack?.substring(0, 1000)
+    };
+    
+    console.error('ErrorBoundary caught an error:', sanitizedError, sanitizedErrorInfo);
+    
+    // In production, log to error reporting service with proper error handling
     if (process.env.NODE_ENV === 'production') {
-      // Example: Sentry.captureException(error, { contexts: { errorInfo } });
+      try {
+        // Example: Sentry.captureException(error, { contexts: { errorInfo } });
+        // Add actual error reporting service integration here
+      } catch (reportingError) {
+        console.error('Failed to report error:', reportingError);
+      }
     }
   }
 

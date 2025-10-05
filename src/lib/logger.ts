@@ -43,21 +43,31 @@ class Logger {
     }
 
     if (error) {
-      entry.error = {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      };
+      try {
+        entry.error = {
+          name: error.name?.substring(0, 100) || 'Error',
+          message: error.message?.substring(0, 500) || 'Unknown error',
+          stack: error.stack?.substring(0, 1000),
+        };
+      } catch (e) {
+        entry.error = {
+          name: 'Error',
+          message: 'Failed to serialize error',
+          stack: undefined,
+        };
+      }
     }
 
     // In production, you might want to send logs to a service like CloudWatch
     if (process.env.NODE_ENV === 'production') {
-      console.log(JSON.stringify(entry));
+      const logStr = JSON.stringify(entry);
+      console.log(logStr.length > 1000 ? logStr.substring(0, 1000) + '...' : logStr);
     } else {
       // Pretty print for development
       console.log(`[${entry.timestamp}] ${entry.level}: ${entry.message}`);
       if (entry.context) {
-        console.log('Context:', entry.context);
+        const contextStr = JSON.stringify(entry.context);
+        console.log('Context:', contextStr.length > 500 ? contextStr.substring(0, 500) + '...' : entry.context);
       }
       if (entry.error) {
         console.error('Error:', entry.error);
@@ -66,7 +76,9 @@ class Logger {
   }
 
   error(message: string, context?: Record<string, any>, error?: Error): void {
-    this.log(LogLevel.ERROR, message, context, error);
+    // Sanitize message to prevent log injection
+    const sanitizedMessage = message.replace(/[\r\n]/g, ' ').substring(0, 500);
+    this.log(LogLevel.ERROR, sanitizedMessage, context, error);
   }
 
   warn(message: string, context?: Record<string, any>): void {

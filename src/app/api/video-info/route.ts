@@ -27,17 +27,17 @@ export const GET = asyncHandler(async (request: Request): Promise<NextResponse> 
   const { searchParams } = new URL(request.url);
   const { videoId } = getValidatedParams(searchParams, VideoInfoRequestSchema);
 
-  logger.info('Fetching video info', { videoId, ip: clientIP });
+  logger.info('Fetching video info', { videoId: videoId.substring(0, 8) + '...', ip: clientIP.substring(0, 8) + '...' });
 
   // Fetch video information
   const videoInfo = await fetchVideoInfo(videoId);
   
   const duration = Date.now() - startTime;
   logger.info('Video info fetched successfully', { 
-    videoId, 
+    videoId: videoId.substring(0, 8) + '...', 
     title: videoInfo.title.substring(0, 50) + '...',
     duration: `${duration}ms`,
-    ip: clientIP 
+    ip: clientIP.substring(0, 8) + '...' 
   });
 
   return NextResponse.json(

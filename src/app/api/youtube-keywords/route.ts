@@ -27,10 +27,15 @@ export const POST = asyncHandler(async (request: Request) => {
   // Generate keyword suggestions
   const suggestions = generateKeywordSuggestions(query.trim());
 
+  // Sanitize suggestions to prevent XSS
+  const sanitizedSuggestions = suggestions.map(suggestion => 
+    suggestion.replace(/[<>"'&]/g, '').substring(0, 200)
+  ).filter(suggestion => suggestion.length > 0);
+
   return NextResponse.json({
-    suggestions,
-    count: suggestions.length,
-    query: query.trim(),
+    suggestions: sanitizedSuggestions,
+    count: sanitizedSuggestions.length,
+    query: query.trim().replace(/[<>"'&]/g, '').substring(0, 100),
     timestamp: new Date().toISOString(),
   });
 });
@@ -42,64 +47,46 @@ function generateKeywordSuggestions(query: string): string[] {
   // Add the original query
   suggestions.add(query);
   
-  // Common YouTube search prefixes
+  // Generate suggestions using helper functions
+  addPrefixSuggestions(suggestions, query, baseQuery);
+  addSuffixSuggestions(suggestions, query, baseQuery);
+  addQuestionSuggestions(suggestions, query, baseQuery);
+  addCategorySuggestions(suggestions, query, baseQuery);
+  addLongTailSuggestions(suggestions, query);
+  
+  return Array.from(suggestions).slice(0, 50);
+}
+
+function addPrefixSuggestions(suggestions: Set<string>, query: string, baseQuery: string): void {
   const prefixes = [
-    'how to',
-    'best',
-    'top 10',
-    'tutorial',
-    'review',
-    'vs',
-    'tips',
-    'guide',
-    'learn',
-    'free',
-    'easy',
-    'quick',
-    'complete',
-    'beginner',
-    'advanced',
-    'step by step'
+    'how to', 'best', 'top 10', 'tutorial', 'review', 'vs',
+    'tips', 'guide', 'learn', 'free', 'easy', 'quick',
+    'complete', 'beginner', 'advanced', 'step by step'
   ];
   
-  // Common YouTube search suffixes
-  const suffixes = [
-    'tutorial',
-    'guide',
-    'tips',
-    'tricks',
-    'review',
-    'explained',
-    'for beginners',
-    'step by step',
-    '2024',
-    '2025',
-    'free',
-    'easy',
-    'quick',
-    'complete guide',
-    'how to',
-    'best practices',
-    'mistakes',
-    'secrets',
-    'hacks'
-  ];
-  
-  // Generate combinations with prefixes
   prefixes.forEach(prefix => {
     if (!baseQuery.includes(prefix)) {
       suggestions.add(`${prefix} ${query}`);
     }
   });
+}
+
+function addSuffixSuggestions(suggestions: Set<string>, query: string, baseQuery: string): void {
+  const suffixes = [
+    'tutorial', 'guide', 'tips', 'tricks', 'review', 'explained',
+    'for beginners', 'step by step', '2024', '2025', 'free',
+    'easy', 'quick', 'complete guide', 'how to', 'best practices',
+    'mistakes', 'secrets', 'hacks'
+  ];
   
-  // Generate combinations with suffixes
   suffixes.forEach(suffix => {
     if (!baseQuery.includes(suffix)) {
       suggestions.add(`${query} ${suffix}`);
     }
   });
-  
-  // Question variations
+}
+
+function addQuestionSuggestions(suggestions: Set<string>, query: string, baseQuery: string): void {
   const questionWords = ['what', 'how', 'why', 'when', 'where', 'which'];
   questionWords.forEach(word => {
     if (!baseQuery.includes(word)) {
@@ -107,8 +94,9 @@ function generateKeywordSuggestions(query: string): string[] {
       suggestions.add(`${word} to ${query}`);
     }
   });
-  
-  // Related terms based on common categories
+}
+
+function addCategorySuggestions(suggestions: Set<string>, query: string, baseQuery: string): void {
   const categories = {
     'cooking': ['recipe', 'ingredients', 'kitchen', 'food', 'meal', 'dish'],
     'tech': ['technology', 'software', 'app', 'device', 'gadget', 'digital'],
@@ -119,35 +107,30 @@ function generateKeywordSuggestions(query: string): string[] {
     'business': ['marketing', 'money', 'entrepreneur', 'startup', 'success', 'strategy']
   };
   
-  // Add category-specific suggestions
-  Object.entries(categories).forEach(([category, terms]) => {
-    if (baseQuery.includes(category) || terms.some(term => baseQuery.includes(term))) {
-      terms.forEach(term => {
+  // Use for...of for better performance with large objects
+  for (const [category, terms] of Object.entries(categories)) {
+    const isRelevantCategory = baseQuery.includes(category) || 
+      terms.some(term => baseQuery.includes(term));
+    
+    if (isRelevantCategory) {
+      for (const term of terms) {
         if (!baseQuery.includes(term)) {
           suggestions.add(`${query} ${term}`);
           suggestions.add(`${term} ${query}`);
         }
-      });
+      }
     }
-  });
-  
-  // Long-tail variations
+  }
+}
+
+function addLongTailSuggestions(suggestions: Set<string>, query: string): void {
   const longTailModifiers = [
-    'for beginners',
-    'step by step',
-    'in 5 minutes',
-    'at home',
-    'without equipment',
-    'on a budget',
-    'for free',
-    'mistakes to avoid',
-    'pros and cons',
-    'before and after'
+    'for beginners', 'step by step', 'in 5 minutes', 'at home',
+    'without equipment', 'on a budget', 'for free', 'mistakes to avoid',
+    'pros and cons', 'before and after'
   ];
   
   longTailModifiers.forEach(modifier => {
     suggestions.add(`${query} ${modifier}`);
   });
-  
-  return Array.from(suggestions).slice(0, 50); // Limit to 50 suggestions
 }

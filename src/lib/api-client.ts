@@ -36,6 +36,14 @@ async function fetchWithTimeout(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
+    // Validate URL to prevent SSRF
+    const urlObj = new URL(url);
+    const allowedHosts = ['localhost', '127.0.0.1', 'www.youtube.com', 'youtube.com', 'youtubei.googleapis.com'];
+    
+    if (!allowedHosts.includes(urlObj.hostname)) {
+      throw new ApiError('Invalid request destination', 400, 'INVALID_URL');
+    }
+    
     const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
@@ -46,11 +54,16 @@ async function fetchWithTimeout(
   } catch (error) {
     clearTimeout(timeoutId);
     
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('Request timed out. Please try again.', 408, 'TIMEOUT');
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new ApiError('Request timed out. Please try again.', 408, 'TIMEOUT');
+      }
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new ApiError('Network error. Please check your connection.', 0, 'NETWORK_ERROR');
+      }
     }
     
-    throw new ApiError('Network error. Please check your connection.', 0, 'NETWORK_ERROR');
+    throw new ApiError('Request failed. Please try again.', 0, 'REQUEST_ERROR');
   }
 }
 
@@ -140,20 +153,35 @@ export class ApiClient {
             break;
           }
           
-          // Wait before retry (exponential backoff)
+          // Wait before retry (exponential backoff with jitter)
           if (attempt < (retries || 0)) {
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            const baseDelay = Math.pow(2, attempt) * 1000;
+            const jitter = Math.random() * 1000;
+            await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
           }
         }
       }
 
-      // Handle final error
-      const errorMessage = lastError instanceof ApiError 
-        ? lastError.message 
-        : 'Something went wrong. Please try again.';
+      // Handle final error with proper sanitization
+      let errorMessage = 'Something went wrong. Please try again.';
+      
+      if (lastError instanceof ApiError) {
+        errorMessage = lastError.message.substring(0, 200); // Limit error message length
+      } else if (lastError instanceof Error) {
+        errorMessage = 'Request failed. Please try again.';
+      }
       
       onError?.(errorMessage);
-      throw lastError || new ApiError('Unknown error occurred', 500);
+      
+      const finalError = lastError || new ApiError('Unknown error occurred', 500);
+      
+      // Log error for debugging (sanitized)
+      console.error('API request failed:', {
+        endpoint: endpoint.substring(0, 100),
+        error: finalError.message.substring(0, 200)
+      });
+      
+      throw finalError;
     } finally {
       onLoadingChange?.(false);
     }
@@ -163,6 +191,10 @@ export class ApiClient {
    * GET request
    */
   async get<T>(endpoint: string, options: ApiClientOptions = {}): Promise<T> {
+    // Validate endpoint to prevent SSRF
+    if (!endpoint.startsWith('/') && !endpoint.startsWith('http')) {
+      throw new ApiError('Invalid endpoint format', 400, 'INVALID_ENDPOINT');
+    }
     return this.request<T>(endpoint, { ...options, method: 'GET' });
   }
 
@@ -174,6 +206,10 @@ export class ApiClient {
     data?: any,
     options: ApiClientOptions = {}
   ): Promise<T> {
+    // Validate endpoint to prevent SSRF
+    if (!endpoint.startsWith('/') && !endpoint.startsWith('http')) {
+      throw new ApiError('Invalid endpoint format', 400, 'INVALID_ENDPOINT');
+    }
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',

@@ -30,8 +30,18 @@ export const preloadCriticalResources = () => {
       link.as = 'font'
       link.type = 'font/woff2'
       link.crossOrigin = 'anonymous'
-      link.href = href
-      document.head.appendChild(link)
+      // Validate href to prevent XSS
+      try {
+        const url = new URL(href)
+        if (url.protocol === 'https:' || url.protocol === 'http:') {
+          link.href = href
+          if (document.head) {
+            document.head.appendChild(link)
+          }
+        }
+      } catch (e) {
+        console.warn('Invalid font preload URL:', href)
+      }
     })
 
     // Preconnect to external domains
@@ -44,8 +54,18 @@ export const preloadCriticalResources = () => {
     preconnectDomains.forEach(href => {
       const link = document.createElement('link')
       link.rel = 'preconnect'
-      link.href = href
-      document.head.appendChild(link)
+      // Validate href to prevent XSS
+      try {
+        const url = new URL(href)
+        if (url.protocol === 'https:' || url.protocol === 'http:') {
+          link.href = href
+          if (document.head) {
+            document.head.appendChild(link)
+          }
+        }
+      } catch (e) {
+        console.warn('Invalid preconnect URL:', href)
+      }
     })
   }
 }

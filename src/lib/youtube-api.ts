@@ -90,15 +90,16 @@ export async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
   try {
-    const response = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${validatedId}&format=json`,
-      {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; TranscriptBot/1.0)',
-        },
-      }
-    );
+    const url = new URL('https://www.youtube.com/oembed');
+    url.searchParams.set('url', `https://www.youtube.com/watch?v=${validatedId}`);
+    url.searchParams.set('format', 'json');
+    
+    const response = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TranscriptBot/1.0)',
+      },
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -205,15 +206,15 @@ export async function fetchVideoDescription(videoId: string): Promise<string> {
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(
-      `https://www.youtube.com/watch?v=${validatedId}`,
-      {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      }
-    );
+    const url = new URL('https://www.youtube.com/watch');
+    url.searchParams.set('v', validatedId);
+    
+    const response = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    });
 
     if (!response.ok) {
       return '';
@@ -318,21 +319,23 @@ async function getTranscriptParams(videoId: string): Promise<string> {
   const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
   try {
-    const response = await fetch(
-      `https://www.youtube.com/watch?v=${videoId}&bpctr=9999999999&hl=en`,
-      {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-        },
-      }
-    );
+    const url = new URL('https://www.youtube.com/watch');
+    url.searchParams.set('v', videoId);
+    url.searchParams.set('bpctr', '9999999999');
+    url.searchParams.set('hl', 'en');
+    
+    const response = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`${ERROR_CODES.FETCH_ERROR}: Failed to fetch video page`);

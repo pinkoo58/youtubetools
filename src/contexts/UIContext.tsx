@@ -4,10 +4,10 @@ import React, { createContext, useContext, useReducer, ReactNode, useMemo, useCa
 
 // Types
 interface UIState {
-  loading: Record<string, boolean>;
-  errors: Record<string, string>;
-  success: Record<string, string>;
-  progress: Record<string, number>;
+  loading: Map<string, boolean>;
+  errors: Map<string, string>;
+  success: Map<string, string>;
+  progress: Map<string, number>;
 }
 
 type UIAction =
@@ -34,47 +34,58 @@ interface UIContextType {
 
 // Initial state
 const initialState: UIState = {
-  loading: {},
-  errors: {},
-  success: {},
-  progress: {},
+  loading: new Map(),
+  errors: new Map(),
+  success: new Map(),
+  progress: new Map(),
 };
 
 // Reducer
 function uiReducer(state: UIState, action: UIAction): UIState {
+  const { key } = action as { key: string };
+  
   switch (action.type) {
-    case 'SET_LOADING':
-      return {
-        ...state,
-        loading: { ...state.loading, [action.key]: action.loading },
-        errors: { ...state.errors, [action.key]: '' }, // Clear error when loading starts
-      };
-    case 'SET_ERROR':
-      return {
-        ...state,
-        errors: { ...state.errors, [action.key]: action.error },
-        loading: { ...state.loading, [action.key]: false },
-        success: { ...state.success, [action.key]: '' },
-      };
-    case 'SET_SUCCESS':
-      return {
-        ...state,
-        success: { ...state.success, [action.key]: action.message },
-        loading: { ...state.loading, [action.key]: false },
-        errors: { ...state.errors, [action.key]: '' },
-      };
-    case 'SET_PROGRESS':
-      return {
-        ...state,
-        progress: { ...state.progress, [action.key]: action.progress },
-      };
-    case 'CLEAR_STATE':
-      return {
-        loading: { ...state.loading, [action.key]: false },
-        errors: { ...state.errors, [action.key]: '' },
-        success: { ...state.success, [action.key]: '' },
-        progress: { ...state.progress, [action.key]: 0 },
-      };
+    case 'SET_LOADING': {
+      const newLoading = new Map(state.loading);
+      const newErrors = new Map(state.errors);
+      newLoading.set(key, (action as any).loading);
+      newErrors.set(key, '');
+      return { ...state, loading: newLoading, errors: newErrors };
+    }
+    case 'SET_ERROR': {
+      const newErrors = new Map(state.errors);
+      const newLoading = new Map(state.loading);
+      const newSuccess = new Map(state.success);
+      newErrors.set(key, (action as any).error);
+      newLoading.set(key, false);
+      newSuccess.set(key, '');
+      return { ...state, errors: newErrors, loading: newLoading, success: newSuccess };
+    }
+    case 'SET_SUCCESS': {
+      const newSuccess = new Map(state.success);
+      const newLoading = new Map(state.loading);
+      const newErrors = new Map(state.errors);
+      newSuccess.set(key, (action as any).message);
+      newLoading.set(key, false);
+      newErrors.set(key, '');
+      return { ...state, success: newSuccess, loading: newLoading, errors: newErrors };
+    }
+    case 'SET_PROGRESS': {
+      const newProgress = new Map(state.progress);
+      newProgress.set(key, (action as any).progress);
+      return { ...state, progress: newProgress };
+    }
+    case 'CLEAR_STATE': {
+      const newLoading = new Map(state.loading);
+      const newErrors = new Map(state.errors);
+      const newSuccess = new Map(state.success);
+      const newProgress = new Map(state.progress);
+      newLoading.set(key, false);
+      newErrors.set(key, '');
+      newSuccess.set(key, '');
+      newProgress.set(key, 0);
+      return { ...state, loading: newLoading, errors: newErrors, success: newSuccess, progress: newProgress };
+    }
     case 'CLEAR_ALL':
       return initialState;
     default:
@@ -108,16 +119,16 @@ export function UIProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CLEAR_ALL' }), []);
   
   const isLoading = useCallback((key: string) => 
-    Boolean(state.loading[key]), [state.loading]);
+    Boolean(state.loading.get(key)), [state.loading]);
   
   const getError = useCallback((key: string) => 
-    state.errors[key] || null, [state.errors]);
+    state.errors.get(key) || null, [state.errors]);
   
   const getSuccess = useCallback((key: string) => 
-    state.success[key] || null, [state.success]);
+    state.success.get(key) || null, [state.success]);
   
   const getProgress = useCallback((key: string) => 
-    state.progress[key] || 0, [state.progress]);
+    state.progress.get(key) || 0, [state.progress]);
 
   const contextValue = useMemo((): UIContextType => ({
     state,

@@ -27,17 +27,17 @@ export const GET = asyncHandler(async (request: Request): Promise<NextResponse> 
   const { searchParams } = new URL(request.url);
   const { videoId } = getValidatedParams(searchParams, TranscriptRequestSchema);
 
-  logger.info('Fetching transcript', { videoId, ip: clientIP });
+  logger.info('Fetching transcript', { videoId: videoId.substring(0, 8) + '...', ip: clientIP.substring(0, 8) + '...' });
 
   // Fetch transcript data
   const transcriptData = await fetchTranscript(videoId);
   
   const duration = Date.now() - startTime;
   logger.info('Transcript fetched successfully', { 
-    videoId, 
+    videoId: videoId.substring(0, 8) + '...', 
     wordCount: transcriptData.wordCount,
     duration: `${duration}ms`,
-    ip: clientIP 
+    ip: clientIP.substring(0, 8) + '...' 
   });
 
   return NextResponse.json(

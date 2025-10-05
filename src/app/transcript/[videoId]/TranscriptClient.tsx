@@ -47,7 +47,9 @@ export default function TranscriptClient({ videoId }: Props) {
       downloadTextFile(content, filename, downloadFormat === 'srt' ? 'text/srt' : 'text/plain');
       setSuccess(DOWNLOAD_KEY, `Transcript downloaded as ${downloadFormat.toUpperCase()}!`);
     } catch (error) {
-      setError(DOWNLOAD_KEY, 'Failed to download transcript. Please try again.');
+      console.error('Download failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download transcript. Please try again.';
+      setError(DOWNLOAD_KEY, errorMessage);
     } finally {
       setLoading(DOWNLOAD_KEY, false);
     }
@@ -184,7 +186,7 @@ export default function TranscriptClient({ videoId }: Props) {
             {/* Video Details */}
             <div className="lg:w-1/2">
               <h2 className="text-xl font-bold text-gray-900 mb-2">
-                {videoInfo?.title || 'YouTube Video Transcript'}
+                {videoInfo?.title ? videoInfo.title.replace(/[<>"'&]/g, '').substring(0, 200) : 'YouTube Video Transcript'}
               </h2>
               {transcript && (
                 <div className="text-sm text-gray-600 mb-4 space-y-1">
@@ -264,9 +266,9 @@ export default function TranscriptClient({ videoId }: Props) {
           
           <div className="p-6">
             <div className="prose max-w-none">
-              <p className="text-gray-800 leading-relaxed text-justify whitespace-pre-wrap">
-                {transcript?.transcript}
-              </p>
+              <div className="text-gray-800 leading-relaxed text-justify whitespace-pre-wrap max-h-96 overflow-y-auto">
+                {transcript?.transcript ? transcript.transcript.replace(/[<>"'&]/g, '') : ''}
+              </div>
             </div>
           </div>
         </div>

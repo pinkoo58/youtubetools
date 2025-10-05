@@ -39,10 +39,15 @@ export default function TranscriptDownloaderClient() {
     }
 
     setCurrentVideoId(videoId);
-    await Promise.all([
-      fetchTranscript(videoId),
-      fetchVideoInfo(videoId)
-    ]);
+    try {
+      await Promise.all([
+        fetchTranscript(videoId),
+        fetchVideoInfo(videoId)
+      ]);
+    } catch (error) {
+      console.error('Failed to fetch video data:', error);
+      setError('Failed to fetch video data. Please try again.');
+    }
   }, [url, fetchTranscript, fetchVideoInfo]);
 
   const handleUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

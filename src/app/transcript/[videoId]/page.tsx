@@ -2,24 +2,42 @@ import { Metadata } from 'next';
 import TranscriptClient from './TranscriptClient';
 
 interface Props {
-  params: { videoId: string };
+  params: Promise<{ videoId: string }>;
 }
 
 async function getVideoTitle(videoId: string) {
   try {
-    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const url = new URL('https://www.youtube.com/oembed');
+    url.searchParams.set('url', `https://www.youtube.com/watch?v=${videoId}`);
+    url.searchParams.set('format', 'json');
+    
+    const response = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TranscriptBot/1.0)' }
+    });
+    
+    clearTimeout(timeoutId);
+    
     if (response.ok) {
       const data = await response.json();
-      return data.title;
+      if (data && typeof data.title === 'string') {
+        return data.title.substring(0, 200);
+      }
     }
   } catch (error) {
-    console.error('Error fetching video title:', error);
+    if (error instanceof Error && error.name !== 'AbortError') {
+      console.error('Error fetching video title:', error.message);
+    }
   }
   return 'YouTube Video';
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const videoTitle = await getVideoTitle(params.videoId);
+  const { videoId } = await params;
+  const videoTitle = await getVideoTitle(videoId);
   
   return {
     title: `Download YouTube Transcript – ${videoTitle}`,
@@ -27,12 +45,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `Download YouTube Transcript – ${videoTitle}`,
       description: `Instantly get subtitles or captions from ${videoTitle} – online transcript extractor tool.`,
-      url: `https://tools.aipepal.com/transcript/${params.videoId}`,
+      url: `https://tools.aipepal.com/transcript/${videoId}`,
       siteName: 'AIPepal Tools',
     },
   };
 }
 
-export default function TranscriptPage({ params }: Props) {
-  return <TranscriptClient videoId={params.videoId} />;
+export default async function TranscriptPage({ params }: Props) {
+  const { videoId } = await params;
+  return <TranscriptClient videoId={videoId} />;
 }

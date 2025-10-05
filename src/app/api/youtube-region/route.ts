@@ -30,10 +30,10 @@ export const POST = asyncHandler(async (request: Request) => {
   // Fetch basic video info
   const videoInfo = await fetchVideoInfo(validationResult.data);
 
-  // Create response with basic info and simulated region data
+  // Create response with sanitized data
   const response = {
-    title: videoInfo.title,
-    channelTitle: videoInfo.author,
+    title: videoInfo.title.replace(/[<>"'&]/g, '').substring(0, 200),
+    channelTitle: videoInfo.author.replace(/[<>"'&]/g, '').substring(0, 100),
     publishedAt: new Date().toISOString(),
     thumbnail: videoInfo.thumbnail,
     regionRestriction: null, // Most videos are available worldwide
