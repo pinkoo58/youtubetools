@@ -12,11 +12,17 @@ export function middleware(request: NextRequest) {
   // CORS for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    
+    // Allow same-origin requests and specific domains
     const allowedOrigins = [
       'http://localhost:3000', 
       'https://localhost:3000',
-      'https://tools.aipepal.com'
-    ];
+      'https://tools.aipepal.com',
+      // Add current host for production
+      host ? `https://${host}` : null,
+      host ? `http://${host}` : null,
+    ].filter(Boolean);
     
     const isAllowedOrigin = !origin || allowedOrigins.includes(origin);
     
@@ -25,7 +31,7 @@ export function middleware(request: NextRequest) {
     }
     
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, User-Agent');
     response.headers.set('Access-Control-Max-Age', '86400');
     
     if (request.method === 'OPTIONS') {
@@ -41,7 +47,7 @@ export function middleware(request: NextRequest) {
     "img-src 'self' data: https://img.youtube.com https://i.ytimg.com",
     "media-src 'self' https://www.youtube.com",
     "frame-src 'self' https://www.youtube.com",
-    "connect-src 'self' https://www.youtube.com https://youtubei.googleapis.com",
+    "connect-src 'self' https://www.youtube.com https://youtubei.googleapis.com https://*.youtube.com",
     "font-src 'self' data:",
     "object-src 'none'",
     "base-uri 'self'",

@@ -87,7 +87,7 @@ export async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
   const validatedId = VideoIdSchema.parse(videoId);
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout
 
   try {
     const url = new URL('https://www.youtube.com/oembed');
@@ -97,7 +97,9 @@ export async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
     const response = await fetch(url.toString(), {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TranscriptBot/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
@@ -203,7 +205,7 @@ export async function fetchVideoDescription(videoId: string): Promise<string> {
   const validatedId = VideoIdSchema.parse(videoId);
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
 
   try {
     const url = new URL('https://www.youtube.com/watch');
@@ -212,7 +214,11 @@ export async function fetchVideoDescription(videoId: string): Promise<string> {
     const response = await fetch(url.toString(), {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
       },
     });
 
@@ -316,7 +322,7 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptRespon
  */
 async function getTranscriptParams(videoId: string): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout
 
   try {
     const url = new URL('https://www.youtube.com/watch');
@@ -327,21 +333,43 @@ async function getTranscriptParams(videoId: string): Promise<string> {
     const response = await fetch(url.toString(), {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
         'Upgrade-Insecure-Requests': '1',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Failed to fetch video page`);
+      if (response.status === 429) {
+        throw new Error(`${ERROR_CODES.RATE_LIMITED}: YouTube rate limit exceeded`);
+      }
+      if (response.status === 404) {
+        throw new Error(`${ERROR_CODES.VIDEO_NOT_FOUND}: Video not found`);
+      }
+      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Failed to fetch video page (${response.status})`);
     }
 
     const html = await response.text();
+    
+    // Check if video is available
+    if (html.includes('"isLiveContent":true')) {
+      throw new Error(`${ERROR_CODES.NO_TRANSCRIPT}: Live videos don't have transcripts`);
+    }
+    
+    if (html.includes('"playabilityStatus":{"status":"UNPLAYABLE"')) {
+      throw new Error(`${ERROR_CODES.VIDEO_NOT_FOUND}: Video is not available`);
+    }
     
     // Extract transcript endpoint parameters
     const paramsMatch = html.match(/"getTranscriptEndpoint":\{"params":"([^"]+)"/);
@@ -366,7 +394,7 @@ async function getTranscriptParams(videoId: string): Promise<string> {
  */
 async function getTranscriptData(params: string, videoId: string): Promise<TranscriptResponse> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout
 
   try {
     const response = await fetch(
@@ -376,15 +404,25 @@ async function getTranscriptData(params: string, videoId: string): Promise<Trans
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
           'Origin': 'https://www.youtube.com',
           'Referer': `https://www.youtube.com/watch?v=${videoId}`,
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'same-origin',
         },
         body: JSON.stringify({
           context: {
             client: {
               clientName: 'WEB',
-              clientVersion: '2.20241201.00.00',
+              clientVersion: '2.20241215.01.00',
             },
           },
           params,
@@ -394,7 +432,13 @@ async function getTranscriptData(params: string, videoId: string): Promise<Trans
     );
 
     if (!response.ok) {
-      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Transcript API error`);
+      if (response.status === 429) {
+        throw new Error(`${ERROR_CODES.RATE_LIMITED}: YouTube API rate limit exceeded`);
+      }
+      if (response.status === 403) {
+        throw new Error(`${ERROR_CODES.NO_TRANSCRIPT}: Access denied to transcript`);
+      }
+      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Transcript API error (${response.status})`);
     }
 
     const data = await response.json();

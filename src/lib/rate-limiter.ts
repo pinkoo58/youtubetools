@@ -14,7 +14,10 @@ class RateLimiter {
   private readonly windowMs: number;
   private cleanupInterval: NodeJS.Timeout;
 
-  constructor(maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) { // 100 requests per 15 minutes
+  constructor(
+    maxRequests: number = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), 
+    windowMs: number = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') // 15 minutes
+  ) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
     
@@ -98,17 +101,28 @@ export const rateLimiter = new RateLimiter();
  * Get client IP address from request
  */
 export function getClientIP(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIP = request.headers.get('x-real-ip');
+  // Try various headers used by different hosting providers
+  const headers = [
+    'x-forwarded-for',
+    'x-real-ip',
+    'x-client-ip',
+    'cf-connecting-ip', // Cloudflare
+    'x-forwarded',
+    'forwarded-for',
+    'forwarded'
+  ];
   
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
+  for (const header of headers) {
+    const value = request.headers.get(header);
+    if (value) {
+      // Handle comma-separated IPs (take first one)
+      const ip = value.split(',')[0].trim();
+      if (ip && ip !== 'unknown') {
+        return ip;
+      }
+    }
   }
   
-  if (realIP) {
-    return realIP;
-  }
-  
-  // Fallback for development
+  // Fallback for development/unknown
   return 'unknown';
 }
