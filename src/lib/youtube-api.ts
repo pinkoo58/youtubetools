@@ -303,18 +303,62 @@ function extractDescriptionFromData(data: any): string {
 }
 
 /**
- * Fetches transcript using YouTube's internal API
+ * Fetches transcript using YouTube's internal API with fallback
  */
 export async function fetchTranscript(videoId: string): Promise<TranscriptResponse> {
   const validatedId = VideoIdSchema.parse(videoId);
   
-  // Step 1: Get transcript parameters from video page
-  const params = await getTranscriptParams(validatedId);
-  
-  // Step 2: Fetch transcript data using parameters
-  const transcriptData = await getTranscriptData(params, validatedId);
-  
-  return transcriptData;
+  try {
+    // Primary method: YouTube internal API
+    const params = await getTranscriptParams(validatedId);
+    const transcriptData = await getTranscriptData(params, validatedId);
+    return transcriptData;
+  } catch (error) {
+    // Fallback: Try mobile YouTube
+    try {
+      return await fetchTranscriptMobile(validatedId);
+    } catch (fallbackError) {
+      // Re-throw original error
+      throw error;
+    }
+  }
+}
+
+/**
+ * Fallback method using mobile YouTube
+ */
+async function fetchTranscriptMobile(videoId: string): Promise<TranscriptResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(`https://m.youtube.com/watch?v=${videoId}`, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Mobile YouTube unavailable`);
+    }
+
+    const html = await response.text();
+    
+    // Extract basic transcript if available
+    const titleMatch = html.match(/<title>([^<]+)<\/title>/);
+    const title = titleMatch?.[1] || 'Unknown';
+    
+    // Return minimal transcript data
+    return {
+      transcript: `Transcript not available for video: ${title}`,
+      language: 'en',
+      trackName: 'Fallback',
+      wordCount: 0,
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**

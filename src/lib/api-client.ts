@@ -38,7 +38,7 @@ async function fetchWithTimeout(
   try {
     // Validate URL to prevent SSRF
     const urlObj = new URL(url);
-    const allowedHosts = ['localhost', '127.0.0.1', 'www.youtube.com', 'youtube.com', 'youtubei.googleapis.com'];
+    const allowedHosts = ['localhost', '127.0.0.1', 'www.youtube.com', 'youtube.com', 'youtubei.googleapis.com', 'm.youtube.com'];
     
     if (!allowedHosts.includes(urlObj.hostname)) {
       throw new ApiError('Invalid request destination', 400, 'INVALID_URL');

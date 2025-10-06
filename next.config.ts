@@ -1,11 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Performance optimizations
   compress: true,
   poweredByHeader: false,
   
-  // Image optimization
   images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -13,7 +11,6 @@ const nextConfig: NextConfig = {
     domains: ['img.youtube.com', 'i.ytimg.com'],
   },
   
-  // Headers for security and performance
   async headers() {
     return [
       {
@@ -57,24 +54,6 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  
-  // Experimental features for performance
-  experimental: {
-    optimizeCss: true,
-    scrollRestoration: true,
-  },
-  
-  // Bundle analyzer in development
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config: any) => {
-      config.plugins.push(
-        new (require('@next/bundle-analyzer')({
-          enabled: true,
-        }))()
-      )
-      return config
-    },
-  }),
 };
 
 export default nextConfig;

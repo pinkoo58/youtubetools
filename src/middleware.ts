@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
     "img-src 'self' data: https://img.youtube.com https://i.ytimg.com",
     "media-src 'self' https://www.youtube.com",
     "frame-src 'self' https://www.youtube.com",
-    "connect-src 'self' https://www.youtube.com https://youtubei.googleapis.com https://*.youtube.com",
+    "connect-src 'self' https://www.youtube.com https://youtubei.googleapis.com https://*.youtube.com https://m.youtube.com",
     "font-src 'self' data:",
     "object-src 'none'",
     "base-uri 'self'",
