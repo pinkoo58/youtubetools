@@ -1,52 +1,30 @@
-import { NextResponse } from 'next/server';
-import { fetchVideoTags, VideoIdSchema, createErrorResponse, ERROR_CODES } from '@/lib/youtube-api';
-import { rateLimiter, getClientIP } from '@/lib/rate-limiter';
-import { asyncHandler } from '@/lib/error-handler';
+import { fetchVideoTags } from '@/lib/youtube-api';
+import { createApiRoute } from '@/lib/api-route-template';
+import { z } from 'zod';
 
-export const POST = asyncHandler(async (request: Request) => {
-  // Rate limiting
-  const clientIp = getClientIP(request);
-  const isAllowed = rateLimiter.isAllowed(clientIp);
+const TagsRequestSchema = z.object({
+  videoId: z.string().min(1)
+});
+
+async function handleTagsRequest(videoId: string) {
+  const tags = await fetchVideoTags(videoId);
   
-  if (!isAllowed) {
-    return NextResponse.json(
-      createErrorResponse('Rate limit exceeded', ERROR_CODES.RATE_LIMITED),
-      { status: 429 }
-    );
-  }
-
-  const body = await request.json();
-  const { videoId } = body;
-
-  // Validate video ID
-  const validationResult = VideoIdSchema.safeParse(videoId);
-  if (!validationResult.success) {
-    return NextResponse.json(
-      createErrorResponse('Invalid video ID format', ERROR_CODES.INVALID_VIDEO_ID),
-      { status: 400 }
-    );
-  }
-
-  // Fetch tags with error handling
-  let tags: string[];
-  try {
-    tags = await fetchVideoTags(validationResult.data);
-  } catch (error) {
-    console.error('Failed to fetch video tags:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      createErrorResponse('Failed to fetch video tags', ERROR_CODES.FETCH_ERROR),
-      { status: 500 }
-    );
-  }
-
   // Sanitize tags to prevent XSS
   const sanitizedTags = tags.map(tag => 
     typeof tag === 'string' ? tag.replace(/[<>"'&]/g, '').substring(0, 100) : ''
   ).filter(tag => tag.length > 0);
 
-  return NextResponse.json({
+  return {
     tags: sanitizedTags,
     count: sanitizedTags.length,
     timestamp: new Date().toISOString(),
-  });
+  };
+}
+
+export const POST = createApiRoute({
+  handler: handleTagsRequest,
+  cacheMaxAge: 3600,
+  logContext: 'video tags',
+  schema: TagsRequestSchema,
+  method: 'POST'
 });

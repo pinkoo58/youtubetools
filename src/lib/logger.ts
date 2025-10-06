@@ -82,11 +82,13 @@ class Logger {
   }
 
   warn(message: string, context?: Record<string, any>): void {
-    this.log(LogLevel.WARN, message, context);
+    const sanitizedMessage = message.replace(/[\r\n]/g, ' ').substring(0, 500);
+    this.log(LogLevel.WARN, sanitizedMessage, context);
   }
 
   info(message: string, context?: Record<string, any>): void {
-    this.log(LogLevel.INFO, message, context);
+    const sanitizedMessage = message.replace(/[\r\n]/g, ' ').substring(0, 500);
+    this.log(LogLevel.INFO, sanitizedMessage, context);
   }
 
   debug(message: string, context?: Record<string, any>): void {

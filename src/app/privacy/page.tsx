@@ -1,47 +1,18 @@
-import { generateMetadata } from '@/lib/seo'
-import { getBreadcrumbSchema } from '@/lib/structured-data'
-import Link from 'next/link'
+import { LegalPageTemplate, generateLegalMetadata } from '@/components/LegalPageTemplate';
 
-export const metadata = generateMetadata({
-  title: 'Privacy Policy - YouTube Tools',
-  description: 'Privacy policy for YouTube Tools. Learn how we protect your data and respect your privacy when using our free YouTube utilities.',
-  canonical: 'https://tools.aipepal.com/privacy',
-})
+export const metadata = generateLegalMetadata(
+  'Privacy Policy',
+  'Privacy policy for YouTube Tools. Learn how we protect your data and respect your privacy when using our free YouTube utilities.',
+  '/privacy'
+);
 
 export default function PrivacyPage() {
-  const breadcrumbSchema = getBreadcrumbSchema([
-    { name: 'Home', url: 'https://tools.aipepal.com' },
-    { name: 'Privacy Policy', url: 'https://tools.aipepal.com/privacy' },
-  ])
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbSchema),
-        }}
-      />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-        <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/50">
-          <nav className="container mx-auto px-4 py-4">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </div>
-              <span className="text-xl font-bold">YouTube Tools</span>
-            </Link>
-          </nav>
-        </header>
-
-        <main className="container mx-auto px-4 py-12 max-w-4xl">
-          <article className="bg-white rounded-2xl shadow-lg p-8">
-            <header className="mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-              <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
-            </header>
+    <LegalPageTemplate
+      title="Privacy Policy"
+      description="Privacy policy for YouTube Tools"
+      path="/privacy"
+    >
 
             <div className="prose prose-lg max-w-none">
               <section className="mb-8">
@@ -88,9 +59,6 @@ export default function PrivacyPage() {
                 </p>
               </section>
             </div>
-          </article>
-        </main>
-      </div>
-    </>
-  )
+    </LegalPageTemplate>
+  );
 }

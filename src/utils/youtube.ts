@@ -5,7 +5,18 @@
 /**
  * Extracts video ID from various YouTube URL formats
  */
-import { YOUTUBE_URL_PATTERNS, VALIDATION_LIMITS } from '@/lib/constants';
+// Inline constants
+const YOUTUBE_URL_PATTERNS = [
+  /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&\n?#]+)/,
+  /(?:https?:\/\/)?youtu\.be\/([^&\n?#]+)/,
+  /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([^&\n?#]+)/,
+  /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^&\n?#]+)/,
+];
+
+const VALIDATION_LIMITS = {
+  URL_MAX_LENGTH: 2048,
+  VIDEO_ID_LENGTH: 11,
+};
 
 // Pre-compiled regex for better performance
 const VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]+$/;

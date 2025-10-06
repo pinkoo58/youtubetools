@@ -1,16 +1,19 @@
 import KeywordGeneratorClient from './KeywordGeneratorClient';
+import { generateToolMetadata } from '@/lib/metadata-template';
+import { ToolPageTemplate } from '@/components/ToolPageTemplate';
 
-export const metadata = {
-  title: "YouTube Keyword Generator – Free Tag & Keyword Tool",
-  description: "Generate YouTube keywords and tags from any topic. Get hundreds of keyword suggestions for better SEO and discoverability. No signup required.",
-  openGraph: {
-    title: "YouTube Keyword Generator – Free Tag & Keyword Tool",
-    description: "Generate YouTube keywords and tags from any topic. Get hundreds of keyword suggestions for better SEO and discoverability. No signup required.",
-    url: "https://tools.aipepal.com/youtube-tools/keyword-generator",
-    siteName: "AIPepal Tools",
-  },
-};
+export const metadata = generateToolMetadata({
+  toolId: 'keyword-generator',
+  path: '/youtube-tools/keyword-generator'
+});
 
 export default function KeywordGenerator() {
-  return <KeywordGeneratorClient />;
+  return (
+    <ToolPageTemplate
+      toolId="keyword-generator"
+      path="/youtube-tools/keyword-generator"
+    >
+      <KeywordGeneratorClient />
+    </ToolPageTemplate>
+  );
 }

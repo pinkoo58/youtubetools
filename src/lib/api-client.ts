@@ -36,12 +36,14 @@ async function fetchWithTimeout(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
   
   try {
-    // Validate URL to prevent SSRF
-    const urlObj = new URL(url);
-    const allowedHosts = ['localhost', '127.0.0.1', 'www.youtube.com', 'youtube.com', 'youtubei.googleapis.com', 'm.youtube.com'];
-    
-    if (!allowedHosts.includes(urlObj.hostname)) {
-      throw new ApiError('Invalid request destination', 400, 'INVALID_URL');
+    // Only validate absolute URLs to prevent SSRF
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const urlObj = new URL(url);
+      const allowedHosts = ['localhost', '127.0.0.1', 'www.youtube.com', 'youtube.com', 'youtubei.googleapis.com', 'm.youtube.com'];
+      
+      if (!allowedHosts.includes(urlObj.hostname)) {
+        throw new ApiError('Invalid request destination', 400, 'INVALID_URL');
+      }
     }
     
     const response = await fetch(url, {
@@ -61,6 +63,8 @@ async function fetchWithTimeout(
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         throw new ApiError('Network error. Please check your connection.', 0, 'NETWORK_ERROR');
       }
+      // Pass through the original error message for better debugging
+      throw new ApiError(error.message || 'Request failed. Please try again.', 0, 'REQUEST_ERROR');
     }
     
     throw new ApiError('Request failed. Please try again.', 0, 'REQUEST_ERROR');
@@ -117,11 +121,35 @@ export class ApiClient {
             },
           });
 
-          const data: StandardApiResponse<T> = await response.json();
+          let data: StandardApiResponse<T>;
+          try {
+            data = await response.json();
+          } catch (parseError) {
+            throw new ApiError(
+              'Invalid response format from server',
+              response.status,
+              'PARSE_ERROR'
+            );
+          }
 
           if (!response.ok) {
+            // Handle specific HTTP status codes
+            if (response.status === 404) {
+              throw new ApiError(
+                'API endpoint not found. Please check the URL.',
+                404,
+                'NOT_FOUND'
+              );
+            }
+            if (response.status === 500) {
+              throw new ApiError(
+                'Server error. Please try again later.',
+                500,
+                'SERVER_ERROR'
+              );
+            }
             throw new ApiError(
-              data.message || `HTTP ${response.status}`,
+              data.message || `HTTP ${response.status}: ${response.statusText}`,
               response.status,
               data.code
             );
@@ -176,10 +204,8 @@ export class ApiClient {
       const finalError = lastError || new ApiError('Unknown error occurred', 500);
       
       // Log error for debugging (sanitized)
-      console.error('API request failed:', {
-        endpoint: endpoint.substring(0, 100),
-        error: finalError.message.substring(0, 200)
-      });
+      const errorDetails = `Endpoint: ${endpoint.substring(0, 100)}, Error: ${finalError.message.substring(0, 200)}, Status: ${finalError instanceof ApiError ? finalError.statusCode : 'unknown'}`;
+      console.error('API request failed:', errorDetails);
       
       throw finalError;
     } finally {

@@ -1,16 +1,19 @@
 import TitleDescriptionClient from './TitleDescriptionClient';
+import { generateToolMetadata } from '@/lib/metadata-template';
+import { ToolPageTemplate } from '@/components/ToolPageTemplate';
 
-export const metadata = {
-  title: "YouTube Title and Description Extractor – Free Online Tool",
-  description: "Extract YouTube video titles and descriptions instantly. No signup required, fast and free.",
-  openGraph: {
-    title: "YouTube Title and Description Extractor – Free Online Tool",
-    description: "Extract YouTube video titles and descriptions instantly. No signup required, fast and free.",
-    url: "https://tools.aipepal.com/youtube-tools/title-description-extractor",
-    siteName: "AIPepal Tools",
-  },
-};
+export const metadata = generateToolMetadata({
+  toolId: 'title-description-extractor',
+  path: '/youtube-tools/title-description-extractor'
+});
 
 export default function TitleDescriptionExtractor() {
-  return <TitleDescriptionClient />;
+  return (
+    <ToolPageTemplate
+      toolId="title-description-extractor"
+      path="/youtube-tools/title-description-extractor"
+    >
+      <TitleDescriptionClient />
+    </ToolPageTemplate>
+  );
 }

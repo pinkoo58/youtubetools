@@ -1,30 +1,11 @@
-import { NextResponse } from 'next/server';
-import { rateLimiter, getClientIP } from '@/lib/rate-limiter';
-import { asyncHandler } from '@/lib/error-handler';
+import { createApiRoute } from '@/lib/api-route-template';
+import { z } from 'zod';
 
-export const POST = asyncHandler(async (request: Request) => {
-  // Rate limiting
-  const clientIp = getClientIP(request);
-  const isAllowed = rateLimiter.isAllowed(clientIp);
-  
-  if (!isAllowed) {
-    return NextResponse.json(
-      { error: 'Rate limit exceeded' },
-      { status: 429 }
-    );
-  }
+const KeywordsRequestSchema = z.object({
+  query: z.string().min(1)
+});
 
-  const body = await request.json();
-  const { query } = body;
-
-  if (!query || typeof query !== 'string' || query.trim().length === 0) {
-    return NextResponse.json(
-      { error: 'Query parameter is required' },
-      { status: 400 }
-    );
-  }
-
-  // Generate keyword suggestions
+async function handleKeywordsRequest(query: string) {
   const suggestions = generateKeywordSuggestions(query.trim());
 
   // Sanitize suggestions to prevent XSS
@@ -32,12 +13,20 @@ export const POST = asyncHandler(async (request: Request) => {
     suggestion.replace(/[<>"'&]/g, '').substring(0, 200)
   ).filter(suggestion => suggestion.length > 0);
 
-  return NextResponse.json({
+  return {
     suggestions: sanitizedSuggestions,
     count: sanitizedSuggestions.length,
     query: query.trim().replace(/[<>"'&]/g, '').substring(0, 100),
     timestamp: new Date().toISOString(),
-  });
+  };
+}
+
+export const POST = createApiRoute({
+  handler: handleKeywordsRequest,
+  cacheMaxAge: 1800,
+  logContext: 'keyword suggestions',
+  schema: KeywordsRequestSchema,
+  method: 'POST'
 });
 
 function generateKeywordSuggestions(query: string): string[] {

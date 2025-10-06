@@ -1,16 +1,19 @@
 import RegionRestrictionClient from './RegionRestrictionClient';
+import { generateToolMetadata } from '@/lib/metadata-template';
+import { ToolPageTemplate } from '@/components/ToolPageTemplate';
 
-export const metadata = {
-  title: "YouTube Region Restriction Checker – Free Online Tool",
-  description: "Check if YouTube videos are blocked in specific countries. Verify regional availability and restrictions instantly. No signup required.",
-  openGraph: {
-    title: "YouTube Region Restriction Checker – Free Online Tool",
-    description: "Check if YouTube videos are blocked in specific countries. Verify regional availability and restrictions instantly. No signup required.",
-    url: "https://tools.aipepal.com/youtube-tools/region-restriction-checker",
-    siteName: "AIPepal Tools",
-  },
-};
+export const metadata = generateToolMetadata({
+  toolId: 'region-restriction-checker',
+  path: '/youtube-tools/region-restriction-checker'
+});
 
 export default function RegionRestrictionChecker() {
-  return <RegionRestrictionClient />;
+  return (
+    <ToolPageTemplate
+      toolId="region-restriction-checker"
+      path="/youtube-tools/region-restriction-checker"
+    >
+      <RegionRestrictionClient />
+    </ToolPageTemplate>
+  );
 }

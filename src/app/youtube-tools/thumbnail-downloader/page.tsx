@@ -1,16 +1,19 @@
 import ThumbnailDownloaderClient from './ThumbnailDownloaderClient';
+import { generateToolMetadata } from '@/lib/metadata-template';
+import { ToolPageTemplate } from '@/components/ToolPageTemplate';
 
-export const metadata = {
-  title: "YouTube Thumbnail Downloader – Free Online Tool",
-  description: "Download YouTube video thumbnails in high quality (HD, HQ, SD) for free. No signup required.",
-  openGraph: {
-    title: "YouTube Thumbnail Downloader – Free Online Tool",
-    description: "Download YouTube video thumbnails in high quality (HD, HQ, SD) for free. No signup required.",
-    url: "https://tools.aipepal.com/youtube-tools/thumbnail-downloader",
-    siteName: "AIPepal Tools",
-  },
-};
+export const metadata = generateToolMetadata({
+  toolId: 'thumbnail-downloader',
+  path: '/youtube-tools/thumbnail-downloader'
+});
 
 export default function ThumbnailDownloader() {
-  return <ThumbnailDownloaderClient />;
+  return (
+    <ToolPageTemplate
+      toolId="thumbnail-downloader"
+      path="/youtube-tools/thumbnail-downloader"
+    >
+      <ThumbnailDownloaderClient />
+    </ToolPageTemplate>
+  );
 }
