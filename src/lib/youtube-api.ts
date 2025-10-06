@@ -314,51 +314,42 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptRespon
     const transcriptData = await getTranscriptData(params, validatedId);
     return transcriptData;
   } catch (error) {
-    // Fallback: Try mobile YouTube
-    try {
-      return await fetchTranscriptMobile(validatedId);
-    } catch (fallbackError) {
-      // Re-throw original error
+    // Log the specific error for debugging
+    console.error('Primary transcript method failed:', {
+      videoId: validatedId.substring(0, 8) + '...',
+      error: error instanceof Error ? error.message : String(error),
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
+    
+    // In development, re-throw the error to see what's wrong
+    if (process.env.NODE_ENV === 'development') {
       throw error;
     }
+    
+    // In production, use fallback
+    return await fetchTranscriptMobile(validatedId);
   }
 }
 
 /**
- * Fallback method using mobile YouTube
+ * Fallback method using alternative approach
  */
 async function fetchTranscriptMobile(videoId: string): Promise<TranscriptResponse> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-  try {
-    const response = await fetch(`https://m.youtube.com/watch?v=${videoId}`, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`${ERROR_CODES.FETCH_ERROR}: Mobile YouTube unavailable`);
-    }
-
-    const html = await response.text();
-    
-    // Extract basic transcript if available
-    const titleMatch = html.match(/<title>([^<]+)<\/title>/);
-    const title = titleMatch?.[1] || 'Unknown';
-    
-    // Return minimal transcript data
-    return {
-      transcript: `Transcript not available for video: ${title}`,
-      language: 'en',
-      trackName: 'Fallback',
-      wordCount: 0,
-    };
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  // Try to get video info first
+  const videoInfo = await fetchVideoInfo(videoId);
+  
+  // Return a message indicating transcript is not available in production
+  const message = `Transcript extraction is currently unavailable for this video due to hosting restrictions. ` +
+    `Video: "${videoInfo.title}" by ${videoInfo.author}. ` +
+    `Please try again later or contact support if this issue persists.`;
+  
+  return {
+    transcript: message,
+    language: 'en',
+    trackName: 'Service Notice',
+    wordCount: message.split(' ').length,
+  };
 }
 
 /**
